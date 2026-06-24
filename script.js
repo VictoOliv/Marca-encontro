@@ -1,4 +1,5 @@
 const botaoNao = document.getElementById("nao");
+const palco = document.getElementById("palco");
 
 const botaoSim =
 document.getElementById("sim");
@@ -35,45 +36,60 @@ window.addEventListener("load", () => {
 // BOTÃO FUGITIVO
 // ================================
 
+function getMargemFuga() {
+    return window.innerWidth <= 600 ? 14 : 28;
+}
+
 function getAreaFuga() {
 
     const caixa = document.getElementById("caixa");
-    const rect = caixa.getBoundingClientRect();
+    const palcoRect = palco.getBoundingClientRect();
+    const caixaRect = caixa.getBoundingClientRect();
 
-    const larguraBotao = botaoNao.offsetWidth || 120;
-    const alturaBotao = botaoNao.offsetHeight || 45;
+    const btnW = botaoNao.offsetWidth || 120;
+    const btnH = botaoNao.offsetHeight || 45;
+    const extra = getMargemFuga();
 
-    const extra = window.innerWidth <= 600 ? 20 : 40;
+    let minX = caixaRect.left - palcoRect.left - extra;
+    let maxX = caixaRect.right - palcoRect.left - btnW + extra;
+    let minY = caixaRect.top - palcoRect.top - extra;
+    let maxY = caixaRect.bottom - palcoRect.top - btnH + extra;
 
-    let minX = rect.left - extra;
-    let maxX = rect.right + extra - larguraBotao;
-    let minY = rect.top - extra;
-    let maxY = rect.bottom + extra - alturaBotao;
+    const limite = 4;
+    const palcoW = palco.offsetWidth;
+    const palcoH = palco.offsetHeight;
 
-    const margemTela = 8;
-
-    minX = Math.max(margemTela, minX);
-    minY = Math.max(margemTela, minY);
-    maxX = Math.min(window.innerWidth - larguraBotao - margemTela, maxX);
-    maxY = Math.min(window.innerHeight - alturaBotao - margemTela, maxY);
+    minX = Math.max(limite, minX);
+    minY = Math.max(limite, minY);
+    maxX = Math.min(palcoW - btnW - limite, maxX);
+    maxY = Math.min(palcoH - btnH - limite, maxY);
 
     if (maxX < minX) {
-        const centro = rect.left + rect.width / 2 - larguraBotao / 2;
-        minX = maxX = Math.max(
-            margemTela,
-            Math.min(centro, window.innerWidth - larguraBotao - margemTela)
-        );
+        const centro = caixaRect.left - palcoRect.left + caixaRect.width / 2 - btnW / 2;
+        minX = maxX = Math.max(limite, Math.min(centro, palcoW - btnW - limite));
     }
 
     if (maxY < minY) {
-        const centro = rect.top + rect.height / 2 - alturaBotao / 2;
-        minY = maxY = Math.max(
-            margemTela,
-            Math.min(centro, window.innerHeight - alturaBotao - margemTela)
-        );
+        const centro = caixaRect.top - palcoRect.top + caixaRect.height / 2 - btnH / 2;
+        minY = maxY = Math.max(limite, Math.min(centro, palcoH - btnH - limite));
     }
 
-    return { minX, maxX, minY, maxY, larguraBotao, alturaBotao };
+    return { minX, maxX, minY, maxY, btnW, btnH };
+}
+
+function iniciarFuga() {
+
+    const pos = botaoNao.getBoundingClientRect();
+    const palcoRect = palco.getBoundingClientRect();
+
+    botaoNao.classList.add("fugindo");
+    palco.appendChild(botaoNao);
+
+    botaoNao.style.width = pos.width + "px";
+    botaoNao.style.height = pos.height + "px";
+    botaoNao.style.left = (pos.left - palcoRect.left) + "px";
+    botaoNao.style.top = (pos.top - palcoRect.top) + "px";
+    fugindo = true;
 }
 
 function fugir() {
@@ -81,40 +97,31 @@ function fugir() {
     if (!podeFugir) return;
 
     const agora = Date.now();
-    if (agora - ultimaFuga < 120) return;
+    if (agora - ultimaFuga < 100) return;
     ultimaFuga = agora;
 
     if (!fugindo) {
-
-        fugindo = true;
-
-        const pos = botaoNao.getBoundingClientRect();
-
-        botaoNao.classList.add("fugindo");
-        document.body.appendChild(botaoNao);
-
-        botaoNao.style.width = pos.width + "px";
-        botaoNao.style.height = pos.height + "px";
-        botaoNao.style.left = pos.left + "px";
-        botaoNao.style.top = pos.top + "px";
+        iniciarFuga();
     }
 
-    const { minX, maxX, minY, maxY, larguraBotao, alturaBotao } = getAreaFuga();
+    const area = getAreaFuga();
+    const palcoRect = palco.getBoundingClientRect();
+    const atual = botaoNao.getBoundingClientRect();
 
-    const rectAtual = botaoNao.getBoundingClientRect();
-    const centroAtualX = rectAtual.left + rectAtual.width / 2;
-    const centroAtualY = rectAtual.top + rectAtual.height / 2;
+    const centroAtualX = atual.left - palcoRect.left + atual.width / 2;
+    const centroAtualY = atual.top - palcoRect.top + atual.height / 2;
 
-    let x, y;
+    let x = area.minX;
+    let y = area.minY;
     let tentativas = 0;
-    const distanciaMinima = 50;
+    const distanciaMinima = 36;
 
     do {
-        x = minX + Math.random() * (maxX - minX);
-        y = minY + Math.random() * (maxY - minY);
+        x = area.minX + Math.random() * (area.maxX - area.minX);
+        y = area.minY + Math.random() * (area.maxY - area.minY);
 
-        const centroNovoX = x + larguraBotao / 2;
-        const centroNovoY = y + alturaBotao / 2;
+        const centroNovoX = x + area.btnW / 2;
+        const centroNovoY = y + area.btnH / 2;
 
         const distancia = Math.hypot(
             centroNovoX - centroAtualX,
@@ -124,10 +131,13 @@ function fugir() {
         if (distancia >= distanciaMinima) break;
 
         tentativas++;
-    } while (tentativas < 12);
+    } while (tentativas < 10);
 
-    botaoNao.style.left = x + "px";
-    botaoNao.style.top = y + "px";
+    x = Math.max(area.minX, Math.min(x, area.maxX));
+    y = Math.max(area.minY, Math.min(y, area.maxY));
+
+    botaoNao.style.left = Math.round(x) + "px";
+    botaoNao.style.top = Math.round(y) + "px";
 }
 
 // Desktop e mobile (toque)
@@ -176,7 +186,7 @@ document.addEventListener("touchmove", (e) => {
 
 // Eventos extras
 botaoNao.addEventListener(
-    "mouseenter",
+    "pointerenter",
     fugir
 );
 
@@ -193,11 +203,6 @@ botaoNao.addEventListener("click", (e) => {
     e.stopImmediatePropagation();
     fugir();
 });
-
-// Garante que continue visível
-
-
-
 // ================================
 // CORAÇÕES
 // ================================

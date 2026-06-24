@@ -1,34 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Aceita sair comigo?</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div id="coracoes"></div>
 
-    <div class="caixa" id="caixa">
-        <h1>Aceita sair comigo?</h1>
+    <div class="palco" id="palco">
+        <div class="caixa" id="caixa">
+            <h1>Aceita sair comigo?</h1>
 
-        <div class="botoes">
-            <button id="sim">Sim</button>
-            <div class="btn-nao-wrapper">
-                <button id="nao">Não</button>
+            <div class="botoes">
+                <button id="sim">Sim</button>
+                <div class="btn-nao-wrapper" id="slotNao">
+                    <button id="nao" type="button">Não</button>
+                </div>
             </div>
         </div>
     </div>
 
     <div id="modalEncontro" class="modal oculto">
-
         <div class="modal-card">
-
             <div id="conteudoModal"></div>
-
         </div>
-
     </div>
 
     <script src="script.js"></script>

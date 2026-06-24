@@ -21,7 +21,6 @@ body{
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden;
     position: relative;
     padding: 16px;
     background:
@@ -33,20 +32,29 @@ body{
         );
 }
 
+.palco{
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 480px;
+    padding: 52px 28px;
+    overflow: visible;
+}
+
 .caixa{
-    background: rgba(20, 20, 25, .9);
-    backdrop-filter: blur(10px);
+    background: rgba(22, 18, 30, 0.96);
     border: 1px solid rgba(157, 78, 221, .15);
     padding: 28px 20px;
     width: 100%;
     max-width: 420px;
+    margin: 0 auto;
     border-radius: 20px;
     text-align: center;
     box-shadow:
         0 0 30px rgba(123, 44, 191, .15),
         0 10px 40px rgba(0, 0, 0, .4);
-    z-index: 10;
     position: relative;
+    z-index: 1;
 }
 
 .caixa h1{
@@ -94,16 +102,16 @@ button{
 #nao{
     background: #e53935;
     color: white;
-    z-index: 9999;
     position: relative;
+    z-index: 2;
 }
 
 #nao.fugindo{
-    position: fixed;
-    z-index: 100;
+    position: absolute;
+    z-index: 20;
     margin: 0;
-    transition: left 0.18s ease, top 0.18s ease;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    pointer-events: auto;
 }
 
 #coracoes{
@@ -338,6 +346,11 @@ button{
 
     body{
         padding: 24px;
+    }
+
+    .palco{
+        max-width: 520px;
+        padding: 56px 36px;
     }
 
     .caixa{
