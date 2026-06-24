@@ -40,6 +40,72 @@ function getMargemFuga() {
     return window.innerWidth <= 600 ? 14 : 28;
 }
 
+function getZonaSim() {
+
+    const palcoRect = palco.getBoundingClientRect();
+    const simRect = botaoSim.getBoundingClientRect();
+    const margem = 10;
+
+    return {
+        left: simRect.left - palcoRect.left - margem,
+        top: simRect.top - palcoRect.top - margem,
+        right: simRect.right - palcoRect.left + margem,
+        bottom: simRect.bottom - palcoRect.top + margem
+    };
+}
+
+function sobrepoeSim(x, y, btnW, btnH, zonaSim) {
+
+    const direita = x + btnW;
+    const baixo = y + btnH;
+
+    return !(
+        direita <= zonaSim.left ||
+        x >= zonaSim.right ||
+        baixo <= zonaSim.top ||
+        y >= zonaSim.bottom
+    );
+}
+
+function sortearPosicaoFuga(area, centroAtualX, centroAtualY, zonaSim) {
+
+    const distanciaMinima = 36;
+    let x = area.minX;
+    let y = area.minY;
+
+    for (let tentativas = 0; tentativas < 24; tentativas++) {
+        x = area.minX + Math.random() * (area.maxX - area.minX);
+        y = area.minY + Math.random() * (area.maxY - area.minY);
+
+        if (sobrepoeSim(x, y, area.btnW, area.btnH, zonaSim)) {
+            continue;
+        }
+
+        const centroNovoX = x + area.btnW / 2;
+        const centroNovoY = y + area.btnH / 2;
+
+        const distancia = Math.hypot(
+            centroNovoX - centroAtualX,
+            centroNovoY - centroAtualY
+        );
+
+        if (distancia >= distanciaMinima) {
+            return { x, y };
+        }
+    }
+
+    for (let tentativas = 0; tentativas < 24; tentativas++) {
+        x = area.minX + Math.random() * (area.maxX - area.minX);
+        y = area.minY + Math.random() * (area.maxY - area.minY);
+
+        if (!sobrepoeSim(x, y, area.btnW, area.btnH, zonaSim)) {
+            return { x, y };
+        }
+    }
+
+    return null;
+}
+
 function getAreaFuga() {
 
     const caixa = document.getElementById("caixa");
@@ -107,34 +173,22 @@ function fugir() {
     const area = getAreaFuga();
     const palcoRect = palco.getBoundingClientRect();
     const atual = botaoNao.getBoundingClientRect();
+    const zonaSim = getZonaSim();
 
     const centroAtualX = atual.left - palcoRect.left + atual.width / 2;
     const centroAtualY = atual.top - palcoRect.top + atual.height / 2;
 
-    let x = area.minX;
-    let y = area.minY;
-    let tentativas = 0;
-    const distanciaMinima = 36;
+    const posicao = sortearPosicaoFuga(
+        area,
+        centroAtualX,
+        centroAtualY,
+        zonaSim
+    );
 
-    do {
-        x = area.minX + Math.random() * (area.maxX - area.minX);
-        y = area.minY + Math.random() * (area.maxY - area.minY);
+    if (!posicao) return;
 
-        const centroNovoX = x + area.btnW / 2;
-        const centroNovoY = y + area.btnH / 2;
-
-        const distancia = Math.hypot(
-            centroNovoX - centroAtualX,
-            centroNovoY - centroAtualY
-        );
-
-        if (distancia >= distanciaMinima) break;
-
-        tentativas++;
-    } while (tentativas < 10);
-
-    x = Math.max(area.minX, Math.min(x, area.maxX));
-    y = Math.max(area.minY, Math.min(y, area.maxY));
+    const x = Math.max(area.minX, Math.min(posicao.x, area.maxX));
+    const y = Math.max(area.minY, Math.min(posicao.y, area.maxY));
 
     botaoNao.style.left = Math.round(x) + "px";
     botaoNao.style.top = Math.round(y) + "px";
