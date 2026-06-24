@@ -20,6 +20,8 @@ let dadosEncontro = {
 };
 
 let podeFugir = false;
+let fugindo = false;
+let ultimaFuga = 0;
 
 window.addEventListener("load", () => {
 
@@ -33,44 +35,96 @@ window.addEventListener("load", () => {
 // BOTÃO FUGITIVO
 // ================================
 
+function getAreaFuga() {
+
+    const caixa = document.getElementById("caixa");
+    const rect = caixa.getBoundingClientRect();
+
+    const larguraBotao = botaoNao.offsetWidth || 120;
+    const alturaBotao = botaoNao.offsetHeight || 45;
+
+    const extra = window.innerWidth <= 600 ? 20 : 40;
+
+    let minX = rect.left - extra;
+    let maxX = rect.right + extra - larguraBotao;
+    let minY = rect.top - extra;
+    let maxY = rect.bottom + extra - alturaBotao;
+
+    const margemTela = 8;
+
+    minX = Math.max(margemTela, minX);
+    minY = Math.max(margemTela, minY);
+    maxX = Math.min(window.innerWidth - larguraBotao - margemTela, maxX);
+    maxY = Math.min(window.innerHeight - alturaBotao - margemTela, maxY);
+
+    if (maxX < minX) {
+        const centro = rect.left + rect.width / 2 - larguraBotao / 2;
+        minX = maxX = Math.max(
+            margemTela,
+            Math.min(centro, window.innerWidth - larguraBotao - margemTela)
+        );
+    }
+
+    if (maxY < minY) {
+        const centro = rect.top + rect.height / 2 - alturaBotao / 2;
+        minY = maxY = Math.max(
+            margemTela,
+            Math.min(centro, window.innerHeight - alturaBotao - margemTela)
+        );
+    }
+
+    return { minX, maxX, minY, maxY, larguraBotao, alturaBotao };
+}
+
 function fugir() {
 
-    if (botaoNao.style.position !== "fixed") {
+    if (!podeFugir) return;
+
+    const agora = Date.now();
+    if (agora - ultimaFuga < 120) return;
+    ultimaFuga = agora;
+
+    if (!fugindo) {
+
+        fugindo = true;
 
         const pos = botaoNao.getBoundingClientRect();
 
-        botaoNao.style.position = "fixed";
+        botaoNao.classList.add("fugindo");
+        document.body.appendChild(botaoNao);
+
         botaoNao.style.width = pos.width + "px";
         botaoNao.style.height = pos.height + "px";
         botaoNao.style.left = pos.left + "px";
         botaoNao.style.top = pos.top + "px";
     }
 
-    const larguraBotao = botaoNao.offsetWidth;
-    const alturaBotao = botaoNao.offsetHeight;
-    const margem = 12;
-
-    const minX = margem;
-    const maxX = window.innerWidth - larguraBotao - margem;
-    const minY = margem;
-    const maxY = window.innerHeight - alturaBotao - margem;
-
-    if (maxX <= minX || maxY <= minY) return;
-
-    let x = minX + Math.random() * (maxX - minX);
-    let y = minY + Math.random() * (maxY - minY);
+    const { minX, maxX, minY, maxY, larguraBotao, alturaBotao } = getAreaFuga();
 
     const rectAtual = botaoNao.getBoundingClientRect();
-    let tentativas = 0;
+    const centroAtualX = rectAtual.left + rectAtual.width / 2;
+    const centroAtualY = rectAtual.top + rectAtual.height / 2;
 
-    while (
-        tentativas < 8 &&
-        Math.hypot(x - rectAtual.left, y - rectAtual.top) < 80
-    ) {
+    let x, y;
+    let tentativas = 0;
+    const distanciaMinima = 50;
+
+    do {
         x = minX + Math.random() * (maxX - minX);
         y = minY + Math.random() * (maxY - minY);
+
+        const centroNovoX = x + larguraBotao / 2;
+        const centroNovoY = y + alturaBotao / 2;
+
+        const distancia = Math.hypot(
+            centroNovoX - centroAtualX,
+            centroNovoY - centroAtualY
+        );
+
+        if (distancia >= distanciaMinima) break;
+
         tentativas++;
-    }
+    } while (tentativas < 12);
 
     botaoNao.style.left = x + "px";
     botaoNao.style.top = y + "px";

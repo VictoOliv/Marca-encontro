@@ -98,8 +98,12 @@ button{
     position: relative;
 }
 
-#nao[style*="fixed"]{
+#nao.fugindo{
+    position: fixed;
+    z-index: 100;
     margin: 0;
+    transition: left 0.18s ease, top 0.18s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
 #coracoes{
