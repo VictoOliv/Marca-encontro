@@ -40,6 +40,10 @@ function getMargemFuga() {
     return window.innerWidth <= 600 ? 14 : 28;
 }
 
+function isDesktopComMouse() {
+    return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+}
+
 function getZonaSim() {
 
     const palcoRect = palco.getBoundingClientRect();
@@ -106,6 +110,80 @@ function sortearPosicaoFuga(area, centroAtualX, centroAtualY, zonaSim) {
     return null;
 }
 
+function getPosicaoReserva(area, zonaSim, evitarX, evitarY, palcoRect) {
+
+    const pontos = [
+        { x: area.minX, y: area.minY },
+        { x: area.maxX, y: area.minY },
+        { x: area.minX, y: area.maxY },
+        { x: area.maxX, y: area.maxY },
+        { x: area.minX, y: (area.minY + area.maxY) / 2 },
+        { x: area.maxX, y: (area.minY + area.maxY) / 2 },
+        { x: (area.minX + area.maxX) / 2, y: area.minY },
+        { x: (area.minX + area.maxX) / 2, y: area.maxY }
+    ];
+
+    let melhor = null;
+    let maiorDistancia = -1;
+
+    for (const ponto of pontos) {
+        if (sobrepoeSim(ponto.x, ponto.y, area.btnW, area.btnH, zonaSim)) {
+            continue;
+        }
+
+        const centroX = palcoRect.left + ponto.x + area.btnW / 2;
+        const centroY = palcoRect.top + ponto.y + area.btnH / 2;
+        const distancia = Math.hypot(centroX - evitarX, centroY - evitarY);
+
+        if (distancia > maiorDistancia) {
+            maiorDistancia = distancia;
+            melhor = ponto;
+        }
+    }
+
+    return melhor;
+}
+
+function escolherPosicaoFuga(area, zonaSim, palcoRect, ponteiroX, ponteiroY) {
+
+    const palcoLeft = palcoRect.left;
+    const palcoTop = palcoRect.top;
+    const atual = botaoNao.getBoundingClientRect();
+
+    const centroAtualX = atual.left - palcoLeft + atual.width / 2;
+    const centroAtualY = atual.top - palcoTop + atual.height / 2;
+
+    const alvoX = ponteiroX ?? palcoLeft + centroAtualX;
+    const alvoY = ponteiroY ?? palcoTop + centroAtualY;
+
+    if (isDesktopComMouse()) {
+        const reserva = getPosicaoReserva(area, zonaSim, alvoX, alvoY, palcoRect);
+        if (reserva) return reserva;
+    }
+
+    const sorteada = sortearPosicaoFuga(
+        area,
+        centroAtualX,
+        centroAtualY,
+        zonaSim
+    );
+
+    if (sorteada) return sorteada;
+
+    return getPosicaoReserva(area, zonaSim, alvoX, alvoY, palcoRect);
+}
+
+function aplicarPosicao(area, posicao) {
+
+    const x = Math.max(area.minX, Math.min(posicao.x, area.maxX));
+    const y = Math.max(area.minY, Math.min(posicao.y, area.maxY));
+
+    botaoNao.style.left = Math.round(x) + "px";
+    botaoNao.style.top = Math.round(y) + "px";
+    botaoNao.style.visibility = "visible";
+    botaoNao.style.opacity = "1";
+}
+
 function getAreaFuga() {
 
     const caixa = document.getElementById("caixa");
@@ -155,51 +233,61 @@ function iniciarFuga() {
     botaoNao.style.height = pos.height + "px";
     botaoNao.style.left = (pos.left - palcoRect.left) + "px";
     botaoNao.style.top = (pos.top - palcoRect.top) + "px";
+    botaoNao.style.visibility = "visible";
+    botaoNao.style.opacity = "1";
+
+    void botaoNao.offsetHeight;
     fugindo = true;
 }
 
-function fugir() {
-
-    if (!podeFugir) return;
-
-    const agora = Date.now();
-    if (agora - ultimaFuga < 100) return;
-    ultimaFuga = agora;
-
-    if (!fugindo) {
-        iniciarFuga();
-    }
+function moverBotao(ponteiroX, ponteiroY) {
 
     const area = getAreaFuga();
     const palcoRect = palco.getBoundingClientRect();
-    const atual = botaoNao.getBoundingClientRect();
     const zonaSim = getZonaSim();
 
-    const centroAtualX = atual.left - palcoRect.left + atual.width / 2;
-    const centroAtualY = atual.top - palcoRect.top + atual.height / 2;
-
-    const posicao = sortearPosicaoFuga(
+    const posicao = escolherPosicaoFuga(
         area,
-        centroAtualX,
-        centroAtualY,
-        zonaSim
+        zonaSim,
+        palcoRect,
+        ponteiroX,
+        ponteiroY
     );
 
     if (!posicao) return;
 
-    const x = Math.max(area.minX, Math.min(posicao.x, area.maxX));
-    const y = Math.max(area.minY, Math.min(posicao.y, area.maxY));
+    aplicarPosicao(area, posicao);
+}
 
-    botaoNao.style.left = Math.round(x) + "px";
-    botaoNao.style.top = Math.round(y) + "px";
+function fugir(ponteiroX, ponteiroY) {
+
+    if (!podeFugir) return;
+
+    const agora = Date.now();
+    const intervalo = isDesktopComMouse() ? 160 : 100;
+
+    if (agora - ultimaFuga < intervalo) return;
+    ultimaFuga = agora;
+
+    if (!fugindo) {
+        iniciarFuga();
+        requestAnimationFrame(() => {
+            moverBotao(ponteiroX, ponteiroY);
+        });
+        return;
+    }
+
+    moverBotao(ponteiroX, ponteiroY);
 }
 
 // Desktop e mobile (toque)
 document.addEventListener("mousemove", (e) => {
 
-    if (!podeFugir) return;
+    if (!podeFugir || !isDesktopComMouse()) return;
 
     const rect = botaoNao.getBoundingClientRect();
+
+    if (!rect.width || !rect.height) return;
 
     const centroX = rect.left + rect.width / 2;
     const centroY = rect.top + rect.height / 2;
@@ -209,8 +297,8 @@ document.addEventListener("mousemove", (e) => {
         e.clientY - centroY
     );
 
-    if (distancia < 80) {
-        fugir();
+    if (distancia < 90) {
+        fugir(e.clientX, e.clientY);
     }
 
 });
@@ -224,6 +312,8 @@ document.addEventListener("touchmove", (e) => {
 
     const rect = botaoNao.getBoundingClientRect();
 
+    if (!rect.width || !rect.height) return;
+
     const centroX = rect.left + rect.width / 2;
     const centroY = rect.top + rect.height / 2;
 
@@ -233,29 +323,23 @@ document.addEventListener("touchmove", (e) => {
     );
 
     if (distancia < 90) {
-        fugir();
+        fugir(toque.clientX, toque.clientY);
     }
 
 }, { passive: true });
-
-// Eventos extras
-botaoNao.addEventListener(
-    "pointerenter",
-    fugir
-);
 
 botaoNao.addEventListener(
     "pointerdown",
     (e) => {
         e.preventDefault();
-        fugir();
+        fugir(e.clientX, e.clientY);
     }
 );
 
 botaoNao.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopImmediatePropagation();
-    fugir();
+    fugir(e.clientX, e.clientY);
 });
 // ================================
 // CORAÇÕES

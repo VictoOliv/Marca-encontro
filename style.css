@@ -39,6 +39,7 @@ body{
     max-width: 480px;
     padding: 52px 28px;
     overflow: visible;
+    isolation: isolate;
 }
 
 .caixa{
@@ -55,6 +56,7 @@ body{
         0 10px 40px rgba(0, 0, 0, .4);
     position: relative;
     z-index: 1;
+    overflow: visible;
 }
 
 .caixa h1{
@@ -108,8 +110,10 @@ button{
 
 #nao.fugindo{
     position: absolute;
-    z-index: 20;
+    z-index: 50;
     margin: 0;
+    visibility: visible;
+    opacity: 1;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
     pointer-events: auto;
 }
